@@ -18,16 +18,24 @@ public class StmProducer {
     }
 
     public <T> boolean send(String key, T data) throws IOException {
-        return send(key, data, 5);
+        return send(key, data, null);
     }
 
-    public <T>  boolean send(String key, T data, int retryTimes) throws IOException {
+    public <T> boolean send(String key, T data, Runnable callback) throws IOException {
+        return send(key, data, 5, callback);
+    }
+
+    public <T>  boolean send(String key, T data, int retryTimes, Runnable callback) throws IOException {
         if(retryTimes == 0) {
-            return false;
+            if(callback == null) {
+                throw new RuntimeException("send msg failed");
+            } else {
+                callback.run();
+            }
         }
         StmProducerRecord<T> record = new StmProducerRecord<>(key, data);
         if(!broker.receive(record).isSucceed()) {
-           return send(key, data, --retryTimes);
+           return send(key, data, --retryTimes, callback);
         }
         return true;
     }
